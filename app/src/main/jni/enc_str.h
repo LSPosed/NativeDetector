@@ -42,7 +42,7 @@ private:
     char inner[sizeof...(cs) + 1];
 
 public:
-    CONSTEVAL InlineEnc() : inner{cs..., '\0'} {
+    __attribute__ ((optnone)) InlineEnc() : inner{cs..., '\0'} {
         for (std::size_t i = 0; i < sizeof...(cs); ++i) {
             inner[i] ^= (i + sizeof...(cs)) % nextPrime(sizeof...(cs));
         }
@@ -53,19 +53,19 @@ public:
 };
 
 template <char... is, std::size_t... I>
-CONSTEVAL auto MakeInlineEnc(std::index_sequence<I...>) {
+constexpr auto MakeInlineEnc(std::index_sequence<I...>) {
     return InlineEnc<(is ^ ((I + sizeof...(is)) % nextPrime(sizeof...(is))))...>();
 }
 
 template <char... cs> class StaticEnc {
 public:
     CONSTEVAL StaticEnc() = default;
-    CONSTEVAL auto obtain() const {
+    constexpr auto obtain() const {
         return MakeInlineEnc<cs...>(std::make_index_sequence<sizeof...(cs)>());
     }
 };
 
-template <typename T, T... cs> CONSTEVAL auto operator""_ienc() {
+template <typename T, T... cs> constexpr auto operator""_ienc() {
     return MakeInlineEnc<cs...>(std::make_index_sequence<sizeof...(cs)>());
 }
 
