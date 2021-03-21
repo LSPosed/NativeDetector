@@ -46,7 +46,7 @@ jobject asBitmap(JNIEnv *env, float width, jstring label) {
 
     jobject canvas = env->NewObject(classCanvas, initCanvas, bitmap);
 
-    env->CallVoidMethod(textPaint, setColor, 0xFF121212);
+    env->CallVoidMethod(textPaint, setColor, 0xFF303030);
     env->CallVoidMethod(canvas, drawPaint, textPaint);
 
     env->CallVoidMethod(textPaint, setAntiAlias, true);

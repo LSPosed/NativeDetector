@@ -42,7 +42,7 @@ static void onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *wind
     ANativeWindow_lock(window, &buffer, nullptr);
     auto *bits = static_cast<uint32_t *>(buffer.bits);
     for (int i = 0; i < buffer.width; ++i) {
-        bits[i] = 0xFF121212;
+        bits[i] = 0xFF303030;
     }
     for (int i = 1; i < buffer.height; ++i) {
         bits += buffer.stride;
