@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="io.github.vvb2060.rirudetector">
+
+    <application
+        android:extractNativeLibs="false"
+        android:hasCode="false"
+        android:label="Riru Detector"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.DeviceDefault"
+        tools:ignore="AllowBackup,MissingApplicationIcon">
+        <activity
+            android:name="android.app.NativeActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="vvb2060" />
+        </activity>
+    </application>
+</manifest>
