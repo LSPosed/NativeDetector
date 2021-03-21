@@ -15,7 +15,7 @@ static jstring getLabel(JNIEnv *env) {
     const auto libriru = libriru_enc.obtain();
     const auto so = so_enc.obtain();
     auto paths = Solist::FindPathsFromSolist(libriru);
-    if (paths.empty()) return env->NewStringUTF("Riru not found"_ienc .c_str());
+    if (paths.empty()) return env->NewStringUTF("Riru not found"_ienc.c_str());
     return env->NewStringUTF(
             std::accumulate(paths.begin(), paths.end(), std::string{}, [&](auto &p, auto &i) {
                 if (auto s = i.find(libriru), e = i.find(so);
@@ -31,12 +31,15 @@ static jstring getLabel(JNIEnv *env) {
 
 static void onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *window) {
     ANativeWindow_Buffer buffer = {};
-    ANativeWindow_lock(window, &buffer, nullptr);
+    buffer.height = ANativeWindow_getHeight(window);
+    buffer.width = ANativeWindow_getWidth(window);
+    buffer.format = ANativeWindow_getFormat(window);
 
     if (buffer.format != AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM) {
         ANativeWindow_setBuffersGeometry(window, buffer.width, buffer.height,
                                          AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM);
     }
+    ANativeWindow_lock(window, &buffer, nullptr);
     auto *bits = static_cast<uint32_t *>(buffer.bits);
     for (int i = 0; i < buffer.width; ++i) {
         bits[i] = 0xFF121212;
