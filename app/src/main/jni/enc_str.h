@@ -42,7 +42,7 @@ private:
     char inner[sizeof...(cs) + 1];
 
 public:
-    __attribute__ ((optnone)) InlineEnc() : inner{cs..., '\0'} {
+    InlineEnc() : inner{cs..., '\0'} {
         for (std::size_t i = 0; i < sizeof...(cs); ++i) {
             inner[i] ^= (i + sizeof...(cs)) % nextPrime(sizeof...(cs));
         }
