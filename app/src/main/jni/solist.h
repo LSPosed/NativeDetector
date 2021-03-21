@@ -3,10 +3,5 @@
 #include <set>
 
 namespace Solist {
-    std::set<const char *> FindRiruPaths();
+    std::set<std::string_view> FindPathsFromSolist(std::string_view keyword);
 }
-
-
-
-
-

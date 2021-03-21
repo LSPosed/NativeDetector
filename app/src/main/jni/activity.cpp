@@ -2,14 +2,28 @@
 #include <android/bitmap.h>
 #include <unistd.h>
 #include <cstring>
+#include <string>
+#include <numeric>
 #include "bitmap.h"
 #include "solist.h"
 #include "logging.h"
 
 static jstring getLabel(JNIEnv *env) {
-    std::set<const char *> paths = Solist::FindRiruPaths();
+    static std::string_view libriru{"libriru"};
+    static std::string_view so{".so"};
+    const auto paths = Solist::FindPathsFromSolist(libriru);
     if (paths.empty()) return env->NewStringUTF("Riru not found");
-    return env->NewStringUTF(*paths.begin());
+    return env->NewStringUTF(
+            std::accumulate(paths.begin(), paths.end(), std::string{}, [](auto &p, auto &i) {
+                if (auto s = i.find(libriru), e = i.find(so);
+                        s != std::string::npos && e != std::string::npos) {
+                    s += libriru.size();
+                    if (i[s] == '_') ++s;
+                    auto ii = std::string(i.substr(s, e-s));
+                    return p.empty() ? ii : p + ", " + ii;
+                }
+                return p;
+            }).c_str());
 }
 
 static void onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *window) {

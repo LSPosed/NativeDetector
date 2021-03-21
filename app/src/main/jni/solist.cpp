@@ -26,54 +26,6 @@ namespace Solist {
 #endif
         }
 
-        class ProtectedDataGuard {
-
-        public:
-            ProtectedDataGuard() {
-                if (ctor != nullptr)
-                    (this->*ctor)();
-            }
-
-            ~ProtectedDataGuard() {
-                if (dtor != nullptr)
-                    (this->*dtor)();
-            }
-
-            static bool setup(const SandHook::ElfImg &linker) {
-                ctor = MemFunc{.data = {.p = reinterpret_cast<void *>(linker.getSymbAddress(
-                        "__dl__ZN18ProtectedDataGuardC2Ev")),
-                        .adj = 0}}
-                        .f;
-                dtor = MemFunc{.data = {.p = reinterpret_cast<void *>(linker.getSymbAddress(
-                        "__dl__ZN18ProtectedDataGuardD2Ev")),
-                        .adj = 0}}
-                        .f;
-                return ctor != nullptr && dtor != nullptr;
-            }
-
-            ProtectedDataGuard(const ProtectedDataGuard &) = delete;
-
-            void operator=(const ProtectedDataGuard &) = delete;
-
-        private:
-            using FuncType = void (ProtectedDataGuard::*)();
-
-            static FuncType ctor;
-            static FuncType dtor;
-
-            union MemFunc {
-                FuncType f;
-
-                struct {
-                    void *p;
-                    std::ptrdiff_t adj;
-                } data;
-            };
-        };
-
-        ProtectedDataGuard::FuncType ProtectedDataGuard::ctor = nullptr;
-        ProtectedDataGuard::FuncType ProtectedDataGuard::dtor = nullptr;
-
         struct link_map {
             [[maybe_unused]] ElfW(Addr) l_addr;
             char *l_name;
@@ -85,16 +37,11 @@ namespace Solist {
         struct soinfo;
 
         soinfo *solist = nullptr;
-        [[maybe_unused]] soinfo *sonext = nullptr;
         soinfo *somain = nullptr;
 
         struct soinfo {
             soinfo *next() {
                 return *(soinfo **) ((uintptr_t) this + solist_next_offset);
-            }
-
-            [[maybe_unused]] void next(soinfo *si) {
-                *(soinfo **) ((uintptr_t) this + solist_next_offset) = si;
             }
 
             const char *get_realpath() {
@@ -138,11 +85,8 @@ namespace Solist {
 
         const auto initialized = []() {
             SandHook::ElfImg linker(GetLinkerPath());
-            return ProtectedDataGuard::setup(linker) &&
-                   (solist = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
+            return (solist = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
                            "__dl__ZL6solist"))) != nullptr &&
-                   (sonext = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
-                           "__dl__ZL6sonext"))) != nullptr &&
                    (somain = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
                            "__dl__ZL6somain"))) != nullptr &&
                    soinfo::setup(linker);
@@ -155,28 +99,23 @@ namespace Solist {
             }
             return linker_solist;
         }
-
-        std::set<const char *> FindPathsFromSolist(std::string_view keyword) {
-            std::set<const char *> paths{};
-            if (!initialized) {
-                LOGW("not initialized");
-                return paths;
-            }
-            ProtectedDataGuard g;
-            auto list = linker_get_solist();
-            for (const auto &soinfo : linker_get_solist()) {
-                const auto &real_path = soinfo->get_realpath();
-                LOGD("%s", real_path);
-                if (real_path && std::string_view(real_path).find(keyword) != std::string::npos) {
-                    paths.emplace(real_path);
-                    LOGE("Found Riru: %s", real_path);
-                }
-            }
-            return paths;
-        }
     }
 
-    std::set<const char *> FindRiruPaths() {
-        return Solist::FindPathsFromSolist("libriru");
+    std::set<std::string_view> FindPathsFromSolist(std::string_view keyword) {
+        std::set<std::string_view> paths{};
+        if (!initialized) {
+            LOGW("not initialized");
+            return paths;
+        }
+        auto list = linker_get_solist();
+        for (const auto &soinfo : linker_get_solist()) {
+            const auto &real_path = soinfo->get_realpath();
+            LOGD("%s", real_path);
+            if (real_path && std::string_view(real_path).find(keyword) != std::string::npos) {
+                paths.emplace(real_path);
+                LOGE("Found Riru: %s", real_path);
+            }
+        }
+        return paths;
     }
 }
