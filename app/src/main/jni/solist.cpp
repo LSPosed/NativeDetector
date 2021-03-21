@@ -26,14 +26,6 @@ namespace Solist {
 #endif
         }
 
-        struct link_map {
-            [[maybe_unused]] ElfW(Addr) l_addr;
-            char *l_name;
-            [[maybe_unused]] ElfW(Dyn) *l_ld;
-            [[maybe_unused]] struct link_map *l_next;
-            [[maybe_unused]] struct link_map *l_prev;
-        };
-
         struct soinfo;
 
         soinfo *solist = nullptr;
@@ -45,8 +37,9 @@ namespace Solist {
             }
 
             const char *get_realpath() {
-                return get_realpath_sym ? get_realpath_sym(this) : ((link_map *) ((uintptr_t) this +
-                                                                                  solist_linkmap_offset))->l_name;
+                return get_realpath_sym ? get_realpath_sym(this) : ((std::string *) (
+                        (uintptr_t) this +
+                        solist_realpath_offset))->c_str();
             }
 
             static bool setup(const SandHook::ElfImg &linker) {
@@ -65,9 +58,9 @@ namespace Solist {
 
             static size_t solist_next_offset;
 #ifdef __LP64__
-            constexpr static size_t solist_linkmap_offset = 0xd0;
+            constexpr static size_t solist_realpath_offset = 0x1a8;
 #else
-            constexpr static size_t solist_linkmap_offset = 0xfc;
+            constexpr static size_t solist_realpath_offset = 0x174;
 #endif
 
             // since Android 8
@@ -86,7 +79,7 @@ namespace Solist {
         const auto initialized = []() {
             SandHook::ElfImg linker(GetLinkerPath());
             return (solist = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
-                           "__dl__ZL6solist"))) != nullptr &&
+                    "__dl__ZL6solist"))) != nullptr &&
                    (somain = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
                            "__dl__ZL6somain"))) != nullptr &&
                    soinfo::setup(linker);
