@@ -9,24 +9,24 @@
 #include "logging.h"
 #include "enc_str.h"
 
-static jstring getLabel(JNIEnv *env) {
+static std::string getLabel() {
     static auto libriru_enc = "libriru"_senc;
     static auto so_enc = ".so"_senc;
     const auto libriru = libriru_enc.obtain();
     const auto so = so_enc.obtain();
     auto paths = Solist::FindPathsFromSolist(libriru);
-    if (paths.empty()) return env->NewStringUTF("Riru not found"_ienc.c_str());
-    return env->NewStringUTF(
-            std::accumulate(paths.begin(), paths.end(), std::string{}, [&](auto &p, auto &i) {
-                if (auto s = i.find(libriru), e = i.find(so);
-                        s != std::string::npos && e != std::string::npos) {
-                    if (auto n = s + libriru.size(); n != e) s = n; else s += 3;
-                    if (i[s] == '_') ++s;
-                    auto ii = std::string(i.substr(s, e - s));
-                    return p.empty() ? ii : p + ", " + ii;
-                }
-                return p;
-            }).c_str());
+    if (paths.empty()) return "Riru not found"_ienc.c_str();
+    return "Found:"_ienc.c_str() +
+           std::accumulate(paths.begin(), paths.end(), std::string{}, [&](auto &p, auto &i) {
+               if (auto s = i.find(libriru), e = i.find(so);
+                       s != std::string::npos && e != std::string::npos) {
+                   if (auto n = s + libriru.size(); n != e) s = n; else s += 3;
+                   if (i[s] == '_') ++s;
+                   auto ii = std::string(i.substr(s, e - s));
+                   return p + "\n\t" + ii;
+               }
+               return p;
+           });
 }
 
 static void onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *window) {
@@ -50,7 +50,7 @@ static void onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *wind
     }
 
     JNIEnv *env = activity->env;
-    jstring label = getLabel(env);
+    auto label = getLabel();
     jobject bitmap = asBitmap(env, (float) (buffer.width * 0.618), label);
 
     void *pixels;
