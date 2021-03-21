@@ -11,15 +11,15 @@
 static jstring getLabel(JNIEnv *env) {
     static std::string_view libriru{"libriru"};
     static std::string_view so{".so"};
-    const auto paths = Solist::FindPathsFromSolist(libriru);
+    auto paths = Solist::FindPathsFromSolist(libriru);
     if (paths.empty()) return env->NewStringUTF("Riru not found");
     return env->NewStringUTF(
             std::accumulate(paths.begin(), paths.end(), std::string{}, [](auto &p, auto &i) {
                 if (auto s = i.find(libriru), e = i.find(so);
                         s != std::string::npos && e != std::string::npos) {
-                    s += libriru.size();
+                    if (auto n = s + libriru.size(); n != e) s = n; else s += 3;
                     if (i[s] == '_') ++s;
-                    auto ii = std::string(i.substr(s, e-s));
+                    auto ii = std::string(i.substr(s, e - s));
                     return p.empty() ? ii : p + ", " + ii;
                 }
                 return p;
