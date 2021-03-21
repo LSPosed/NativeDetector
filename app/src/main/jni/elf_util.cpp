@@ -10,6 +10,7 @@
 #include <cassert>
 #include "logging.h"
 #include "elf_util.h"
+#include "enc_str.h"
 
 using namespace SandHook;
 
@@ -18,13 +19,13 @@ ElfImg::ElfImg(const char *elf) {
     //load elf
     int fd = open(elf, O_RDONLY);
     if (fd < 0) {
-        LOGE("failed to open %s", elf);
+        LOGE("%s %s", "failed to open"_ienc .c_str(), elf);
         return;
     }
 
     size = lseek(fd, 0, SEEK_END);
     if (size <= 0) {
-        LOGE("lseek() failed for %s", elf);
+        LOGE("%s %s", "lseek() failed for"_ienc .c_str(), elf);
     }
 
     header = reinterpret_cast<Elf_Ehdr *>(mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0));
@@ -37,6 +38,8 @@ ElfImg::ElfImg(const char *elf) {
     char *section_str = reinterpret_cast<char *>(section_header[header->e_shstrndx].sh_offset +
                                                  ((size_t) header));
 
+    auto symtab_str = ".symtab"_ienc;
+    auto strtab_str = ".strtab"_ienc;
     for (int i = 0; i < header->e_shnum; i++, shoff += header->e_shentsize) {
         auto *section_h = (Elf_Shdr *) shoff;
         char *sname = section_h->sh_name + section_str;
@@ -52,7 +55,7 @@ ElfImg::ElfImg(const char *elf) {
                 }
                 break;
             case SHT_SYMTAB:
-                if (strcmp(sname, ".symtab") == 0) {
+                if (strcmp(sname, symtab_str.c_str()) == 0) {
                     symtab = section_h;
                     symtab_offset = section_h->sh_offset;
                     symtab_size = section_h->sh_size;
@@ -66,7 +69,7 @@ ElfImg::ElfImg(const char *elf) {
                     symstr_offset = section_h->sh_offset;
                     strtab_start = reinterpret_cast<Elf_Sym *>(((size_t) header) + symstr_offset);
                 }
-                if (strcmp(sname, ".strtab") == 0) {
+                if (strcmp(sname, strtab_str.c_str()) == 0) {
                     symstr_offset_for_symtab = section_h->sh_offset;
                 }
                 break;
@@ -80,7 +83,7 @@ ElfImg::ElfImg(const char *elf) {
     }
 
     if (!symtab_offset) {
-        LOGW("can't find symtab from sections");
+        LOGW("%s", "can't find symtab from sections"_ienc .c_str());
     }
 
     //load module base
@@ -102,6 +105,9 @@ ElfImg::~ElfImg() {
 Elf_Addr ElfImg::getSymbOffset(const char *name) const {
     Elf_Addr _offset;
 
+#ifndef NDEBUG
+    auto find_str = "find"_ienc;
+#endif
     //search dynmtab
     if (dynsym_start != nullptr && strtab_start != nullptr) {
         Elf_Sym *sym = dynsym_start;
@@ -109,7 +115,7 @@ Elf_Addr ElfImg::getSymbOffset(const char *name) const {
         for (Elf_Off k = 0; k < dynsym_count; k++, sym++)
             if (strcmp(strings + sym->st_name, name) == 0) {
                 _offset = sym->st_value;
-                LOGD("find %s: %p", elf, reinterpret_cast<void *>(_offset));
+                LOGD("%s %s: %p", find_str.c_str(), elf, reinterpret_cast<void *>(_offset));
                 return _offset;
             }
     }
@@ -123,7 +129,7 @@ Elf_Addr ElfImg::getSymbOffset(const char *name) const {
             if ((st_type == STT_FUNC || st_type == STT_OBJECT) && symtab_start[i].st_size) {
                 if (strcmp(st_name, name) == 0) {
                     _offset = symtab_start[i].st_value;
-                    LOGD("find %s: %p", elf, reinterpret_cast<void *>(_offset));
+                    LOGD("%s %s: %p", find_str.c_str(), elf, reinterpret_cast<void *>(_offset));
                     return _offset;
                 }
             }
@@ -146,9 +152,11 @@ void *ElfImg::getModuleBase(const char *name) {
     char buff[256];
     off_t load_addr;
     int found = 0;
-    maps = fopen("/proc/self/maps", "r");
+    maps = fopen("/proc/self/maps"_ienc .c_str(), "r"_ienc .c_str());
+    auto r_xp_str = "r-xp"_ienc;
+    auto r__p_str = "r--p"_ienc;
     while (fgets(buff, sizeof(buff), maps)) {
-        if ((strstr(buff, "r-xp") || strstr(buff, "r--p")) && strstr(buff, name)) {
+        if ((strstr(buff, r_xp_str.c_str()) || strstr(buff, r__p_str.c_str())) && strstr(buff, name)) {
             found = 1;
             LOGD("dlopen: %s", buff);
             break;
@@ -156,16 +164,16 @@ void *ElfImg::getModuleBase(const char *name) {
     }
 
     if (!found) {
-        LOGE("failed to read load address for %s", name);
+        LOGE("%s %s", "failed to read load address for"_ienc .c_str(), name);
         return nullptr;
     }
 
     if (sscanf(buff, "%lx", &load_addr) != 1)
-        LOGE("failed to read load address for %s", name);
+        LOGE("%s %s", "failed to read load address for"_ienc .c_str(), name);
 
     fclose(maps);
 
-    LOGD("get module base %s: %lu", name, load_addr);
+    LOGD("%s %s: %lu", "get module base"_ienc .c_str(), name, load_addr);
 
     return reinterpret_cast<void *>(load_addr);
 }

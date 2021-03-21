@@ -7,14 +7,17 @@
 #include "bitmap.h"
 #include "solist.h"
 #include "logging.h"
+#include "enc_str.h"
 
 static jstring getLabel(JNIEnv *env) {
-    static std::string_view libriru{"libriru"};
-    static std::string_view so{".so"};
+    static auto libriru_enc = "libriru"_senc;
+    static auto so_enc = ".so"_senc;
+    const auto libriru = libriru_enc.obtain();
+    const auto so = so_enc.obtain();
     auto paths = Solist::FindPathsFromSolist(libriru);
-    if (paths.empty()) return env->NewStringUTF("Riru not found");
+    if (paths.empty()) return env->NewStringUTF("Riru not found"_ienc .c_str());
     return env->NewStringUTF(
-            std::accumulate(paths.begin(), paths.end(), std::string{}, [](auto &p, auto &i) {
+            std::accumulate(paths.begin(), paths.end(), std::string{}, [&](auto &p, auto &i) {
                 if (auto s = i.find(libriru), e = i.find(so);
                         s != std::string::npos && e != std::string::npos) {
                     if (auto n = s + libriru.size(); n != e) s = n; else s += 3;

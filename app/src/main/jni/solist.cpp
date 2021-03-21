@@ -7,21 +7,22 @@
 #include "logging.h"
 #include "elf_util.h"
 #include "solist.h"
+#include "enc_str.h"
 
 namespace Solist {
     namespace {
-        const char *GetLinkerPath() {
+        std::string GetLinkerPath() {
 #if __LP64__
             if (android_get_device_api_level() >= 29) {
-                return "/apex/com.android.runtime/bin/linker64";
+                return "/apex/com.android.runtime/bin/linker64"_ienc .c_str();
             } else {
-                return "/system/bin/linker64";
+                return "/system/bin/linker64"_ienc .c_str();
             }
 #else
             if (android_get_device_api_level() >= 29) {
-                return "/apex/com.android.runtime/bin/linker";
+                return "/apex/com.android.runtime/bin/linker"_ienc .c_str();
             } else {
-                return "/system/bin/linker";
+                return "/system/bin/linker"_ienc .c_str();
             }
 #endif
         }
@@ -44,14 +45,14 @@ namespace Solist {
 
             static bool setup(const SandHook::ElfImg &linker) {
                 get_realpath_sym = reinterpret_cast<decltype(get_realpath_sym)>(linker.getSymbAddress(
-                        "__dl__ZNK6soinfo12get_realpathEv"));
+                        "__dl__ZNK6soinfo12get_realpathEv"_ienc .c_str()));
                 for (size_t i = 0; i < 1024 / sizeof(void *); i++) {
                     if (*(void **) ((uintptr_t) solist + i * sizeof(void *)) == somain) {
                         solist_next_offset = i * sizeof(void *);
                         return android_get_device_api_level() < 26 || get_realpath_sym != nullptr;
                     }
                 }
-                LOGW("failed to search next offset");
+                LOGW("%s", "failed to search next offset"_ienc .c_str());
                 // shortcut
                 return android_get_device_api_level() < 26 || get_realpath_sym != nullptr;
             }
@@ -77,11 +78,11 @@ namespace Solist {
         const char *(*soinfo::get_realpath_sym)(soinfo *) = nullptr;
 
         const auto initialized = []() {
-            SandHook::ElfImg linker(GetLinkerPath());
+            SandHook::ElfImg linker(GetLinkerPath().c_str());
             return (solist = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
-                    "__dl__ZL6solist"))) != nullptr &&
+                    "__dl__ZL6solist"_ienc .c_str()))) != nullptr &&
                    (somain = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
-                           "__dl__ZL6somain"))) != nullptr &&
+                           "__dl__ZL6somain"_ienc .c_str()))) != nullptr &&
                    soinfo::setup(linker);
         }();
 
@@ -97,7 +98,7 @@ namespace Solist {
     std::set<std::string_view> FindPathsFromSolist(std::string_view keyword) {
         std::set<std::string_view> paths{};
         if (!initialized) {
-            LOGW("not initialized");
+            LOGW("%s", "not initialized"_ienc .c_str());
             return paths;
         }
         auto list = linker_get_solist();
@@ -106,7 +107,7 @@ namespace Solist {
             LOGD("%s", real_path);
             if (real_path && std::string_view(real_path).find(keyword) != std::string::npos) {
                 paths.emplace(real_path);
-                LOGE("Found Riru: %s", real_path);
+                LOGE("%s%s", "Found Riru:"_ienc .c_str(), real_path);
             }
         }
         return paths;
