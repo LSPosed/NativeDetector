@@ -54,8 +54,11 @@ namespace Solist {
                         "__dl__ZNK6soinfo12get_realpathEv"_ienc .c_str()));
                 get_soname_sym = reinterpret_cast<decltype(get_soname_sym)>(linker.getSymbAddress(
                         "__dl__ZNK6soinfo10get_sonameEv"_ienc .c_str()));
+                auto vsdo = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
+                        "__dl__ZL4vdso"_ienc .c_str()));
                 for (size_t i = 0; i < 1024 / sizeof(void *); i++) {
-                    if (*(void **) ((uintptr_t) solist + i * sizeof(void *)) == somain) {
+                    auto *possible_next = *(void **) ((uintptr_t) solist + i * sizeof(void *));
+                    if (possible_next == somain || (vsdo != nullptr && possible_next == vsdo)) {
                         solist_next_offset = i * sizeof(void *);
                         return android_get_device_api_level() < 26 || (get_realpath_sym != nullptr && get_soname_sym !=
                                                                                                               nullptr);
@@ -66,10 +69,11 @@ namespace Solist {
                 return android_get_device_api_level() < 26 || (get_realpath_sym != nullptr && get_soname_sym != nullptr);
             }
 
-            static size_t solist_next_offset;
 #ifdef __LP64__
+            inline static size_t solist_next_offset = 0x30;
             constexpr static size_t solist_realpath_offset = 0x1a8;
 #else
+            inline static size_t solist_next_offset = 0xa4;
             constexpr static size_t solist_realpath_offset = 0x174;
 #endif
 
@@ -78,11 +82,6 @@ namespace Solist {
             inline static const char *(*get_soname_sym)(soinfo *) = nullptr;
         };
 
-#ifdef __LP64__
-        size_t soinfo::solist_next_offset = 0x30;
-#else
-        size_t soinfo::solist_next_offset = 0xa4;
-#endif
 
         const auto initialized = []() {
             SandHook::ElfImg linker(GetLinkerPath().c_str());

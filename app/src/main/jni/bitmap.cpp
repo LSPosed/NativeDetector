@@ -34,7 +34,7 @@ jobject asBitmap(JNIEnv *env, float width, std::string_view str) {
     env->CallVoidMethod(textPaint, setAntiAlias, true);
     env->CallVoidMethod(textPaint, setAlpha, 222);
     env->CallVoidMethod(textPaint, setTextSize, textSize);
-    jobject builder = env->CallStaticObjectMethod(classLayoutBuilder, obtainLayout, env->NewStringUTF(str.data()), 0, str.size(), textPaint, width);
+    jobject builder = env->CallStaticObjectMethod(classLayoutBuilder, obtainLayout, env->NewStringUTF(str.data()), 0, str.size(), textPaint, (jint)width);
     jobject layout = env->CallObjectMethod(builder, buildLayout);
     jint height = env->CallIntMethod(layout, getHeight);
 
