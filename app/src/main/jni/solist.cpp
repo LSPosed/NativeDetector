@@ -32,6 +32,12 @@ namespace Solist {
         soinfo *solist = nullptr;
         soinfo *somain = nullptr;
 
+        template<typename T>
+        inline T *getStaticVariable(const SandHook::ElfImg &linker, std::string_view name) {
+            auto *addr = reinterpret_cast<T **>(linker.getSymbAddress(name.data()));
+            return addr == nullptr ? nullptr : *addr;
+        }
+
         struct soinfo {
             soinfo *next() {
                 return *(soinfo **) ((uintptr_t) this + solist_next_offset);
@@ -54,8 +60,7 @@ namespace Solist {
                         "__dl__ZNK6soinfo12get_realpathEv"_ienc .c_str()));
                 get_soname_sym = reinterpret_cast<decltype(get_soname_sym)>(linker.getSymbAddress(
                         "__dl__ZNK6soinfo10get_sonameEv"_ienc .c_str()));
-                auto vsdo = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
-                        "__dl__ZL4vdso"_ienc .c_str()));
+                auto vsdo = getStaticVariable<soinfo>(linker, "__dl__ZL4vdso"_ienc);
                 for (size_t i = 0; i < 1024 / sizeof(void *); i++) {
                     auto *possible_next = *(void **) ((uintptr_t) solist + i * sizeof(void *));
                     if (possible_next == somain || (vsdo != nullptr && possible_next == vsdo)) {
@@ -85,10 +90,8 @@ namespace Solist {
 
         const auto initialized = []() {
             SandHook::ElfImg linker(GetLinkerPath().c_str());
-            return (solist = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
-                    "__dl__ZL6solist"_ienc .c_str()))) != nullptr &&
-                   (somain = *reinterpret_cast<soinfo **>(linker.getSymbAddress(
-                           "__dl__ZL6somain"_ienc .c_str()))) != nullptr &&
+            return (solist = getStaticVariable<soinfo>(linker, "__dl__ZL6solist"_ienc)) != nullptr &&
+                   (somain = getStaticVariable<soinfo>(linker, "__dl__ZL6somain"_ienc)) != nullptr &&
                    soinfo::setup(linker);
         }();
 
