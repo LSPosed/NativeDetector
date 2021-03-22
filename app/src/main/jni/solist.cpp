@@ -108,7 +108,6 @@ namespace Solist {
             LOGW("%s", "not initialized"_ienc .c_str());
             return paths;
         }
-        auto list = linker_get_solist();
         for (const auto &soinfo : linker_get_solist()) {
             if (const auto &real_path = soinfo->get_realpath(); real_path && std::string_view(real_path).find(keyword) != std::string::npos) {
                 paths.emplace(real_path);
