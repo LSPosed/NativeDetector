@@ -4,29 +4,50 @@
 #include <cstring>
 #include <string>
 #include <numeric>
+#include <vector>
 #include "bitmap.h"
-#include "solist.h"
 #include "logging.h"
 #include "enc_str.h"
+#include "elf_util.h"
+
+struct soinfo {
+    const char *get_realpath() {
+        return get_realpath_sym ? get_realpath_sym(this) : ((std::string *) (
+                (uintptr_t) this +
+                solist_realpath_offset))->c_str();
+    }
+
+    static bool setup(const SandHook::ElfImg &linker) {
+        get_realpath_sym = reinterpret_cast<decltype(get_realpath_sym)>(linker.getSymbAddress(
+                "__dl__ZNK6soinfo12get_realpathEv"_ienc.c_str()));
+        LOGW("%s", "failed to search next offset"_ienc.c_str());
+        return android_get_device_api_level() < 26 || get_realpath_sym != nullptr;
+    }
+
+#ifdef __LP64__
+    constexpr static size_t solist_realpath_offset = 0x1a8;
+#else
+    constexpr static size_t solist_realpath_offset = 0x174;
+#endif
+
+    // since Android 8
+    inline static const char *(*get_realpath_sym)(soinfo *) = nullptr;
+};
 
 static std::string getLabel() {
-    static auto libriru_enc = "libriru"_senc;
-    static auto so_enc = ".so"_senc;
-    const auto libriru = libriru_enc.obtain();
-    const auto so = so_enc.obtain();
-    auto paths = Solist::FindPathsFromSolist(libriru);
-    if (paths.empty()) return "Riru not found"_ienc.c_str();
-    return "Found:"_ienc.c_str() +
-           std::accumulate(paths.begin(), paths.end(), std::string{}, [&](auto &p, auto &i) {
-               if (auto s = i.find(libriru), e = i.find(so);
-                       s != std::string::npos && e != std::string::npos) {
-                   if (auto n = s + libriru.size(); n != e) s = n; else s += 3;
-                   if (i[s] == '_') ++s;
-                   auto ii = std::string(i.substr(s, e - s));
-                   return p + "\n\t" + ii;
-               }
-               return p;
-           });
+    SandHook::ElfImg linker("/linker"_ienc);
+    soinfo::setup(linker);
+
+    auto *soinfos = reinterpret_cast<std::vector<soinfo *> *>(linker.getSymbAddress(
+            "__dl__ZL13g_ld_preloads"_ienc));
+
+    if (!soinfos || soinfos->empty()) return "Zygisk not found"_ienc.c_str();
+    for (const auto &name : *soinfos) {
+        if (auto realpath = name->get_realpath(); strstr(realpath, "zygisk")) {
+            return "Found Zygisk loaded from:\n"_ienc.c_str() + std::string(realpath);
+        }
+    }
+    return "Zygisk not found but there's LD_PRELOAD"_ienc.c_str();
 }
 
 static void onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *window) {

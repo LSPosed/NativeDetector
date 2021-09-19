@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="io.github.vvb2060.rirudetector">
+    package="io.github.vvb2060.zygiskdetector">
 
     <application
         android:extractNativeLibs="false"
         android:hasCode="false"
-        android:label="Riru Detector"
+        android:label="Zygisk Detector"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault"
         tools:ignore="AllowBackup,MissingApplicationIcon">

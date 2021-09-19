@@ -2,14 +2,18 @@ plugins {
     id 'com.android.application'
 }
 
+repositories {
+    mavenCentral()
+}
+
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.3"
-    ndkVersion '22.0.7026061'
+    compileSdkVersion 31
+    buildToolsVersion "31.0.0"
+    ndkVersion '23.0.7599858'
     defaultConfig {
-        applicationId "io.github.vvb2060.rirudetector"
+        applicationId "io.github.vvb2060.zygiskdetector"
         minSdkVersion 24
-        targetSdkVersion 30
+        targetSdkVersion 31
         versionCode 4
         versionName "1.3"
     }
@@ -32,6 +36,7 @@ android {
     }
     buildFeatures {
         buildConfig false
+        prefab true
     }
     dependenciesInfo {
         includeInApk false
@@ -39,5 +44,9 @@ android {
     lintOptions {
         checkReleaseBuilds false
     }
+}
+
+dependencies {
+    implementation 'dev.rikka.ndk.thirdparty:cxx:1.1.0'
 }
 

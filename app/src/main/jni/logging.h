@@ -14,4 +14,4 @@
 #define LOGD(...)
 #endif
 
-#define TAG "RiruDetector"
+#define TAG "ZygiskDetector"
