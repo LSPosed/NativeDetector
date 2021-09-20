@@ -4,32 +4,14 @@
 #include <cstring>
 #include <string>
 #include <numeric>
+#include <vector>
 #include "bitmap.h"
 #include "solist.h"
 #include "logging.h"
 #include "enc_str.h"
 
-static std::string getLabel() {
-    static auto libriru_enc = "libriru"_senc;
-    static auto so_enc = ".so"_senc;
-    const auto libriru = libriru_enc.obtain();
-    const auto so = so_enc.obtain();
-    auto paths = Solist::FindPathsFromSolist(libriru);
-    if (paths.empty()) return "Riru not found"_ienc.c_str();
-    return "Found:"_ienc.c_str() +
-           std::accumulate(paths.begin(), paths.end(), std::string{}, [&](auto &p, auto &i) {
-               if (auto s = i.find(libriru), e = i.find(so);
-                       s != std::string::npos && e != std::string::npos) {
-                   if (auto n = s + libriru.size(); n != e) s = n; else s += 3;
-                   if (i[s] == '_') ++s;
-                   auto ii = std::string(i.substr(s, e - s));
-                   return p + "\n\t" + ii;
-               }
-               return p;
-           });
-}
-
-static void onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *window) {
+static void
+onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *window, std::string_view label) {
     ANativeWindow_Buffer buffer = {};
     buffer.height = ANativeWindow_getHeight(window);
     buffer.width = ANativeWindow_getWidth(window);
@@ -50,7 +32,6 @@ static void onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *wind
     }
 
     JNIEnv *env = activity->env;
-    auto label = getLabel();
     jobject bitmap = asBitmap(env, (float) (buffer.width * 0.618), label);
 
     void *pixels;
@@ -72,23 +53,6 @@ static void onNativeWindowCreated(ANativeActivity *activity, ANativeWindow *wind
 
     AndroidBitmap_unlockPixels(env, bitmap);
     ANativeWindow_unlockAndPost(window);
-}
-
-static void onStart(ANativeActivity *) {
-
-}
-
-static void onStop(ANativeActivity *) {
-    kill(getpid(), SIGTERM);
-    _exit(0);
-}
-
-static void onResume(ANativeActivity *) {
-
-}
-
-static void onDestroy(ANativeActivity *) {
-
 }
 
 static int repeat;
@@ -131,14 +95,48 @@ static void onInputQueueDestroyed(ANativeActivity *, AInputQueue *queue) {
     AInputQueue_detachLooper(queue);
 }
 
-JNIEXPORT void __unused ANativeActivity_onCreate(ANativeActivity *activity, void *, size_t) {
-    activity->callbacks->onStart = onStart;
-    activity->callbacks->onStop = onStop;
-    activity->callbacks->onResume = onResume;
-    activity->callbacks->onDestroy = onDestroy;
+static std::string getRiruLabel() {
+    static auto libriru_enc = "libriru"_senc;
+    static auto so_enc = ".so"_senc;
+    const auto libriru = libriru_enc.obtain();
+    const auto so = so_enc.obtain();
+    auto paths = Solist::FindPathsFromSolist(libriru);
+    if (paths.empty()) return "Riru not found"_ienc.c_str();
+    return "Found:"_ienc.c_str() +
+           std::accumulate(paths.begin(), paths.end(), std::string{}, [&](auto &p, auto &i) {
+               if (auto s = i.find(libriru), e = i.find(so);
+                       s != std::string::npos && e != std::string::npos) {
+                   if (auto n = s + libriru.size(); n != e) s = n; else s += 3;
+                   if (i[s] == '_') ++s;
+                   auto ii = std::string(i.substr(s, e - s));
+                   return p + "\n\t" + ii;
+               }
+               return p;
+           });
+}
+
+static void riruWindow(ANativeActivity *activity, ANativeWindow *window) {
+    onNativeWindowCreated(activity, window, getRiruLabel());
+}
+
+static void zygiskWindow(ANativeActivity *activity, ANativeWindow *window) {
+    onNativeWindowCreated(activity, window, Solist::FindZygiskFromPreloads());
+}
+
+extern "C" {
+
+JNIEXPORT void __unused riru(ANativeActivity *activity, void *, size_t) {
     activity->callbacks->onInputQueueCreated = onInputQueueCreated;
     activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
-    activity->callbacks->onNativeWindowCreated = onNativeWindowCreated;
-
+    activity->callbacks->onNativeWindowCreated = riruWindow;
     activity->instance = ALooper_prepare(0);
+}
+
+JNIEXPORT void __unused zygisk(ANativeActivity *activity, void *, size_t) {
+    activity->callbacks->onInputQueueCreated = onInputQueueCreated;
+    activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
+    activity->callbacks->onNativeWindowCreated = zygiskWindow;
+    activity->instance = ALooper_prepare(0);
+}
+
 }

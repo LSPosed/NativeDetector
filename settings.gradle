@@ -1,1 +1,21 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+    def ver = '7.1.0-alpha12'
+    plugins {
+        id 'com.android.application' version ver
+        id 'com.android.library' version ver
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name="Native Detector"
 include ':app'

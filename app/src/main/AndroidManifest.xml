@@ -1,25 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="io.github.vvb2060.rirudetector">
+    package="io.github.vvb2060.nativedetector">
 
     <application
         android:extractNativeLibs="false"
         android:hasCode="false"
-        android:label="Riru Detector"
+        android:label="Native Detector"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.DeviceDefault"
-        tools:ignore="AllowBackup,MissingApplicationIcon">
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+        tools:ignore="AllowBackup,MissingApplicationIcon"
+        tools:targetApi="m">
         <activity
             android:name="android.app.NativeActivity"
-            android:exported="true">
+            android:exported="true"
+            android:label="Zygisk Detector">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="vvb2060" />
+            <meta-data
+                android:name="android.app.func_name"
+                android:value="zygisk" />
         </activity>
+        <activity-alias
+            android:name="android"
+            android:exported="true"
+            android:label="Riru Detector"
+            android:targetActivity="android.app.NativeActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="vvb2060" />
+            <meta-data
+                android:name="android.app.func_name"
+                android:value="riru" />
+        </activity-alias>
     </application>
 </manifest>
