@@ -25,21 +25,18 @@ namespace Solist {
 
         struct soinfo {
             soinfo *next() {
-                return *(soinfo **) ((uintptr_t)
-                this + solist_next_offset);
+                return *(soinfo **) ((uintptr_t) this + solist_next_offset);
             }
 
             const char *get_realpath() {
                 return get_realpath_sym ? get_realpath_sym(this) :
-                       ((std::string * )((uintptr_t)
-                this + solist_realpath_offset))->c_str();
+                       ((std::string *) ((uintptr_t) this + solist_realpath_offset))->c_str();
             }
 
             const char *get_soname() {
                 return get_soname_sym ? get_soname_sym(this) :
-                       *((const char **) ((uintptr_t)
-                this + solist_realpath_offset -
-                sizeof(void *)));
+                       *((const char **) ((uintptr_t) this + solist_realpath_offset -
+                                          sizeof(void *)));
             }
 
             static bool setup(const SandHook::ElfImg &linker) {
@@ -80,14 +77,14 @@ namespace Solist {
             SandHook::ElfImg linker("/linker"_ienc);
             solist = getStaticPointer<soinfo>(linker, "__dl__ZL6solist"_ienc);
             somain = getStaticPointer<soinfo>(linker, "__dl__ZL6somain"_ienc);
-            preloads = reinterpret_cast<std::vector<soinfo*>*>(linker.getSymbAddress(
+            preloads = reinterpret_cast<std::vector<soinfo *> *>(linker.getSymbAddress(
                     "__dl__ZL13g_ld_preloads"_ienc));
             return soinfo::setup(linker) &&
                    solist != nullptr && somain != nullptr && preloads != nullptr;
         }();
 
         std::vector<soinfo *> linker_get_solist() {
-            std::vector < soinfo * > linker_solist{};
+            std::vector<soinfo *> linker_solist{};
             for (auto *iter = solist; iter; iter = iter->next()) {
                 linker_solist.push_back(iter);
             }
@@ -105,8 +102,8 @@ namespace Solist {
         return "Zygisk not found but there's LD_PRELOAD"_ienc.c_str();
     }
 
-    std::set <std::string_view> FindPathsFromSolist(std::string_view keyword) {
-        std::set <std::string_view> paths{};
+    std::set<std::string_view> FindPathsFromSolist(std::string_view keyword) {
+        std::set<std::string_view> paths{};
         if (!initialized) {
             LOGW("%s", "not initialized"_ienc.c_str());
             return paths;

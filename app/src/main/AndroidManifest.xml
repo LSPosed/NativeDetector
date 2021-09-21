@@ -11,10 +11,16 @@
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
         tools:ignore="AllowBackup,MissingApplicationIcon"
         tools:targetApi="m">
+
         <activity
             android:name="android.app.NativeActivity"
+            android:enabled="false" />
+
+        <activity-alias
+            android:name="zygisk"
             android:exported="true"
-            android:label="Zygisk Detector">
+            android:label="Zygisk Detector"
+            android:targetActivity="android.app.NativeActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -26,9 +32,9 @@
             <meta-data
                 android:name="android.app.func_name"
                 android:value="zygisk" />
-        </activity>
+        </activity-alias>
         <activity-alias
-            android:name="android"
+            android:name="riru"
             android:exported="true"
             android:label="Riru Detector"
             android:targetActivity="android.app.NativeActivity">
