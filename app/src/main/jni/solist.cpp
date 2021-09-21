@@ -18,25 +18,28 @@ namespace Solist {
         std::vector<soinfo *> *preloads = nullptr;
 
         template<typename T>
-        inline T *getStaticVariable(const SandHook::ElfImg &linker, std::string_view name) {
+        inline T *getStaticPointer(const SandHook::ElfImg &linker, std::string_view name) {
             auto *addr = reinterpret_cast<T **>(linker.getSymbAddress(name.data()));
             return addr == nullptr ? nullptr : *addr;
         }
 
         struct soinfo {
             soinfo *next() {
-                return *(soinfo **) ((uintptr_t) this + solist_next_offset);
+                return *(soinfo **) ((uintptr_t)
+                this + solist_next_offset);
             }
 
             const char *get_realpath() {
                 return get_realpath_sym ? get_realpath_sym(this) :
-                       ((std::string *) ((uintptr_t) this + solist_realpath_offset))->c_str();
+                       ((std::string * )((uintptr_t)
+                this + solist_realpath_offset))->c_str();
             }
 
             const char *get_soname() {
                 return get_soname_sym ? get_soname_sym(this) :
-                       *((const char **) ((uintptr_t) this + solist_realpath_offset -
-                                          sizeof(void *)));
+                       *((const char **) ((uintptr_t)
+                this + solist_realpath_offset -
+                sizeof(void *)));
             }
 
             static bool setup(const SandHook::ElfImg &linker) {
@@ -44,7 +47,7 @@ namespace Solist {
                         linker.getSymbAddress("__dl__ZNK6soinfo12get_realpathEv"_ienc.c_str()));
                 get_soname_sym = reinterpret_cast<decltype(get_soname_sym)>(
                         linker.getSymbAddress("__dl__ZNK6soinfo10get_sonameEv"_ienc.c_str()));
-                auto vsdo = getStaticVariable<soinfo>(linker, "__dl__ZL4vdso"_ienc);
+                auto vsdo = getStaticPointer<soinfo>(linker, "__dl__ZL4vdso"_ienc);
                 for (size_t i = 0; i < 1024 / sizeof(void *); i++) {
                     auto *possible_next = *(void **) ((uintptr_t) solist + i * sizeof(void *));
                     if (possible_next == somain || (vsdo != nullptr && possible_next == vsdo)) {
@@ -75,16 +78,16 @@ namespace Solist {
 
         const auto initialized = []() {
             SandHook::ElfImg linker("/linker"_ienc);
-            solist = getStaticVariable<soinfo>(linker, "__dl__ZL6solist"_ienc);
-            somain = getStaticVariable<soinfo>(linker, "__dl__ZL6somain"_ienc);
-            preloads = *getStaticVariable<std::vector<soinfo *> *>(linker,
-                                                                   "__dl__ZL13g_ld_preloads"_ienc);
+            solist = getStaticPointer<soinfo>(linker, "__dl__ZL6solist"_ienc);
+            somain = getStaticPointer<soinfo>(linker, "__dl__ZL6somain"_ienc);
+            preloads = reinterpret_cast<std::vector<soinfo*>*>(linker.getSymbAddress(
+                    "__dl__ZL13g_ld_preloads"_ienc));
             return soinfo::setup(linker) &&
                    solist != nullptr && somain != nullptr && preloads != nullptr;
         }();
 
         std::vector<soinfo *> linker_get_solist() {
-            std::vector<soinfo *> linker_solist{};
+            std::vector < soinfo * > linker_solist{};
             for (auto *iter = solist; iter; iter = iter->next()) {
                 linker_solist.push_back(iter);
             }
@@ -102,8 +105,8 @@ namespace Solist {
         return "Zygisk not found but there's LD_PRELOAD"_ienc.c_str();
     }
 
-    std::set<std::string_view> FindPathsFromSolist(std::string_view keyword) {
-        std::set<std::string_view> paths{};
+    std::set <std::string_view> FindPathsFromSolist(std::string_view keyword) {
+        std::set <std::string_view> paths{};
         if (!initialized) {
             LOGW("%s", "not initialized"_ienc.c_str());
             return paths;
