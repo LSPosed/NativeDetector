@@ -115,28 +115,53 @@ static std::string getRiruLabel() {
            });
 }
 
+static std::string getZygiskLabel() {
+    static auto modules_enc = "/data/adb/modules/"_senc;
+    static auto zygisk_enc = "zygisk"_senc;
+    const auto zygisk = zygisk_enc.obtain();
+    const auto modules = modules_enc.obtain();
+    auto paths = Solist::FindPathsFromSolist(modules);
+    std::string zygisk_path = Solist::FindZygiskFromPreloads();
+    if (paths.empty()) return zygisk_path;
+    return std::accumulate(paths.begin(), paths.end(), zygisk_path + "\n\nModules:"_ienc .c_str(), [&](auto &p, auto &i) {
+        if (auto e = i.find(zygisk), s = i.rfind('/', e - 2) + 1;
+                s != std::string::npos && e != std::string::npos) {
+            auto ii = std::string(i.substr(s, e - s - 1));
+            return p + "\n\t" + ii;
+        }
+        return p;
+    });
+}
+
 static void riruWindow(ANativeActivity *activity, ANativeWindow *window) {
     onNativeWindowCreated(activity, window, getRiruLabel());
 }
 
 static void zygiskWindow(ANativeActivity *activity, ANativeWindow *window) {
-    onNativeWindowCreated(activity, window, Solist::FindZygiskFromPreloads());
+    onNativeWindowCreated(activity, window, getZygiskLabel());
 }
 
 extern "C" {
 
-JNIEXPORT void __unused riru(ANativeActivity *activity, void *, size_t) {
-    activity->callbacks->onInputQueueCreated = onInputQueueCreated;
-    activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
-    activity->callbacks->onNativeWindowCreated = riruWindow;
-    activity->instance = ALooper_prepare(0);
+JNIEXPORT void __unused
+riru(ANativeActivity * activity , void * , size_t ) {
+activity -> callbacks -> onInputQueueCreated = onInputQueueCreated;
+activity -> callbacks -> onInputQueueDestroyed = onInputQueueDestroyed;
+activity -> callbacks -> onNativeWindowCreated = riruWindow;
+activity -> instance = ALooper_prepare(0);
 }
 
-JNIEXPORT void __unused zygisk(ANativeActivity *activity, void *, size_t) {
-    activity->callbacks->onInputQueueCreated = onInputQueueCreated;
-    activity->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
-    activity->callbacks->onNativeWindowCreated = zygiskWindow;
-    activity->instance = ALooper_prepare(0);
+JNIEXPORT void __unused
+zygisk(ANativeActivity
+*activity, void *, size_t) {
+activity->callbacks->
+onInputQueueCreated = onInputQueueCreated;
+activity->callbacks->
+onInputQueueDestroyed = onInputQueueDestroyed;
+activity->callbacks->
+onNativeWindowCreated = zygiskWindow;
+activity->
+instance = ALooper_prepare(0);
 }
 
 }
