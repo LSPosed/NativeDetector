@@ -4,7 +4,7 @@ pluginManagement {
         google()
         mavenCentral()
     }
-    def ver = '7.1.0-alpha12'
+    def ver = '7.2.0-alpha01'
     plugins {
         id 'com.android.application' version ver
         id 'com.android.library' version ver

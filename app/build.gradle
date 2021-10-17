@@ -10,8 +10,8 @@ android {
         applicationId "io.github.vvb2060.nativedetector"
         minSdkVersion 21
         targetSdkVersion 31
-        versionCode 6
-        versionName "2.1"
+        versionCode 7
+        versionName "2.2"
     }
     externalNativeBuild {
         ndkBuild {
