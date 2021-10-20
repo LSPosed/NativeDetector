@@ -117,7 +117,7 @@ static std::string getRiruLabel() {
 
 static std::string getZygiskLabel() {
     static auto modules_enc = "/data/adb/modules/"_senc;
-    static auto zygisk_enc = "zygisk"_senc;
+    static auto zygisk_enc = "zygisk/"_senc;
     const auto zygisk = zygisk_enc.obtain();
     const auto modules = modules_enc.obtain();
     auto paths = Solist::FindPathsFromSolist(modules);
