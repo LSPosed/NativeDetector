@@ -3,13 +3,13 @@ plugins {
 }
 
 android {
-    compileSdkVersion 31
-    buildToolsVersion "31.0.0"
-    ndkVersion '23.0.7599858'
+    compileSdkVersion 32
+    buildToolsVersion "32.0.0"
+    ndkVersion '23.1.7779620'
     defaultConfig {
         applicationId "io.github.vvb2060.nativedetector"
         minSdkVersion 21
-        targetSdkVersion 31
+        targetSdkVersion 32
         versionCode 7
         versionName "2.2"
     }
@@ -53,5 +53,5 @@ android {
 }
 
 dependencies {
-    implementation 'dev.rikka.ndk.thirdparty:cxx:1.1.0'
+    implementation 'dev.rikka.ndk.thirdparty:cxx:1.2.0'
 }
